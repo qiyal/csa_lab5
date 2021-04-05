@@ -157,27 +157,80 @@ public class SimpleAssemblyInterpreter {
 
     }
 
-    private void doMov(String a, String b) {
-        if (dbHash.containsKey(a)) {
+    private void doMov(String varNameA, String varNameB) {
+        String valueVarB;
 
-        } else if (dwHash.containsKey(a)) {
-
-        } else if (ddHash.containsKey(a)) {
-
+        if (dbHash.containsKey(varNameB)) {
+            valueVarB = dbHash.get(varNameB);
+        } else if (dwHash.containsKey(varNameB)) {
+            valueVarB = dwHash.get(varNameB);
+        } else if (ddHash.containsKey(varNameB)) {
+            valueVarB = ddHash.get(varNameB);
         } else {
-            System.out.println("Error, not found variable! (" + a + ")");
+            System.out.println("Error, not found variable! (" + varNameB + ")");
             isStop = true;
+            return;
         }
 
-        if (dbHash.containsKey(a)) {
-
-        } else if (dwHash.containsKey(a)) {
-
-        } else if (ddHash.containsKey(a)) {
-
+        if (dbHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            dbHash.put(varNameA, valueVarB);
+        } else if (dwHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            dwHash.put(varNameA, valueVarB);
+        } else if (ddHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            ddHash.put(varNameA, valueVarB);
         } else {
-            System.out.println("Error, not found variable! (" + b + ")");
+            System.out.println("Error, not found variable! (" + varNameA + ")");
             isStop = true;
+            return;
+        }
+        
+        lastVarName = varNameA;
+    }
+
+    private void doXchg(String varNameA, String varNameB) {
+        String valueVarA, valueVarB;
+        int typeA, typeB;
+
+        if (dbHash.containsKey(varNameA)) {
+            typeA = 1;
+            valueVarA = dbHash.get(varNameA);
+        } else if (dwHash.containsKey(varNameA)) {
+            typeA = 2;
+            valueVarA = dwHash.get(varNameA);
+        } else if (ddHash.containsKey(varNameA)) {
+            typeA = 3;
+            valueVarA = ddHash.get(varNameA);
+        } else {
+            System.out.println("Error, not found variable! (" + varNameA + ")");
+            isStop = true;
+            return;
+        }
+
+        if (dbHash.containsKey(varNameB)) {
+            typeB = 1;
+            valueVarB = dbHash.get(varNameB);
+        } else if (dwHash.containsKey(varNameB)) {
+            typeB = 2;
+            valueVarB = dwHash.get(varNameB);
+        } else if (ddHash.containsKey(varNameB)) {
+            typeB = 3;
+            valueVarB = ddHash.get(varNameB);
+        } else {
+            System.out.println("Error, not found variable! (" + varNameB + ")");
+            isStop = true;
+            return;
+        }
+
+        if (dbHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            dbHash.put(varNameA, valueVarB);
+        } else if (dwHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            dwHash.put(varNameA, valueVarB);
+        } else if (ddHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            ddHash.put(varNameA, valueVarB);
+        } else {
+            System.out.println("Error, not found variable! (" + varNameA + ")");
+            isStop = true;
+            return;
         }
     }
 
