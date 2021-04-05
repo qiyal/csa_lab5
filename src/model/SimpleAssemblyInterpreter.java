@@ -62,18 +62,18 @@ public class SimpleAssemblyInterpreter {
         return true;
     }
 
-    private int getVarValueByDecimal(String str) {
+    private int getVarValueByDecimal(String value) {
 
-        if (str.endsWith("h")) {
-            return Integer.parseInt(str.substring(0, str.length() - 1), 16);
-        } else if (str.endsWith("q")) {
-            return Integer.parseInt(str.substring(0, str.length() - 1), 8);
-        } else if (str.endsWith("b")) {
-            return Integer.parseInt(str.substring(0, str.length() - 1), 2);
-        } else if (str.endsWith("d")) {
-            return Integer.parseInt(str.substring(0, str.length() - 1), 10);
+        if (value.endsWith("h")) {
+            return Integer.parseInt(value.substring(0, value.length() - 1), 16);
+        } else if (value.endsWith("q")) {
+            return Integer.parseInt(value.substring(0, value.length() - 1), 8);
+        } else if (value.endsWith("b")) {
+            return Integer.parseInt(value.substring(0, value.length() - 1), 2);
+        } else if (value.endsWith("d")) {
+            return Integer.parseInt(value.substring(0, value.length() - 1), 10);
         } else {
-            return Integer.parseInt(str);
+            return Integer.parseInt(value);
         }
     }
 
@@ -157,6 +157,66 @@ public class SimpleAssemblyInterpreter {
 
     }
 
+    private void doSubOrMulOrDiv(String varNameA, String varNameB, String type) {
+        String valueVarA, valueVarB;
+        int typeA, typeB;
+        int varA, varB;
+        int res;
+
+        if (dbHash.containsKey(varNameA)) {
+            typeA = 1;
+            valueVarA = dbHash.get(varNameA);
+        } else if (dwHash.containsKey(varNameA)) {
+            typeA = 2;
+            valueVarA = dwHash.get(varNameA);
+        } else if (ddHash.containsKey(varNameA)) {
+            typeA = 3;
+            valueVarA = ddHash.get(varNameA);
+        } else {
+            System.out.println("Error, not found variable! (" + varNameA + ")");
+            isStop = true;
+            return;
+        }
+        varA = getVarValueByDecimal(valueVarA);
+
+        if (dbHash.containsKey(varNameB)) {
+            typeB = 1;
+            valueVarB = dbHash.get(varNameB);
+        } else if (dwHash.containsKey(varNameB)) {
+            typeB = 2;
+            valueVarB = dwHash.get(varNameB);
+        } else if (ddHash.containsKey(varNameB)) {
+            typeB = 3;
+            valueVarB = ddHash.get(varNameB);
+        } else {
+            System.out.println("Error, not found variable! (" + varNameB + ")");
+            isStop = true;
+            return;
+        }
+        varB = getVarValueByDecimal(valueVarB);
+
+        switch (type) {
+            case "SUB":
+                res = varA - varB;
+                break;
+            case "MUL":
+                res = varA * varB;
+                break;
+            default:
+                res = varA / varB;
+        }
+
+        if (typeA == 1) {
+            dbHash.put(varNameA, convertDecimalByOtherDataTypes(res, defineDataType(valueVarA)));
+        } else if (typeA == 2) {
+            dwHash.put(varNameA, convertDecimalByOtherDataTypes(res, defineDataType(valueVarA)));
+        } else {
+            ddHash.put(varNameA, convertDecimalByOtherDataTypes(res, defineDataType(valueVarA)));
+        }
+
+        lastVarName = varNameA;
+    }
+
     private void doMov(String varNameA, String varNameB) {
         String valueVarB;
 
@@ -167,9 +227,12 @@ public class SimpleAssemblyInterpreter {
         } else if (ddHash.containsKey(varNameB)) {
             valueVarB = ddHash.get(varNameB);
         } else {
-            System.out.println("Error, not found variable! (" + varNameB + ")");
-            isStop = true;
-            return;
+            if (varNameB.startsWith("\'") && varNameB.endsWith("\'")) {
+                valueVarB = varNameB.substring(1);
+                valueVarB = valueVarB.substring(0, valueVarB.length() - 1);
+            } else {
+                valueVarB = varNameB;
+            }
         }
 
         if (dbHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
@@ -221,17 +284,23 @@ public class SimpleAssemblyInterpreter {
             return;
         }
 
-        if (dbHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+        if (typeA == 1) {
             dbHash.put(varNameA, valueVarB);
-        } else if (dwHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+        } else if (typeA == 2) {
             dwHash.put(varNameA, valueVarB);
-        } else if (ddHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
-            ddHash.put(varNameA, valueVarB);
         } else {
-            System.out.println("Error, not found variable! (" + varNameA + ")");
-            isStop = true;
-            return;
+            ddHash.put(varNameA, valueVarB);
         }
+
+        if (typeB == 1) {
+            dbHash.put(varNameB, valueVarA);
+        } else if (typeA == 2) {
+            dwHash.put(varNameB, valueVarA);
+        } else {
+            ddHash.put(varNameB, valueVarA);
+        }
+
+        lastVarName = varNameA;
     }
 
     private void doDeclareVarOrArithmeticOrDataTransfer(String [] strs) {
@@ -240,19 +309,19 @@ public class SimpleAssemblyInterpreter {
                 doAdd(strs);
                 break;
             case "SUB":
-                System.out.println("SUB");
+                doSubOrMulOrDiv(strs[1].substring(0, strs[1].length() - 1), strs[2], "SUB");
                 break;
             case "MUL":
-                System.out.println("MUL");
+                doSubOrMulOrDiv(strs[1].substring(0, strs[1].length() - 1), strs[2], "MUL");
                 break;
             case "DIV":
-                System.out.println("DIV");
+                doSubOrMulOrDiv(strs[1].substring(0, strs[1].length() - 1), strs[2], "DIV");
                 break;
             case "MOV":
                 doMov(strs[1], strs[2]);
                 break;
             case "XCHG":
-                System.out.println("XCHG");
+                doXchg(strs[1].substring(0, strs[1].length() - 1), strs[2]);
                 break;
             default:
                 addVariable(strs[0], strs[1], strs[2]);
