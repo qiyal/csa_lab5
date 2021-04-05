@@ -11,6 +11,7 @@ public class SimpleAssemblyInterpreter {
     private Map<String, String> dbHash;
     private Map<String, String> dwHash;
     private Map<String, String> ddHash;
+    private Set<String> varIsStringSet;
     private List<String> storeCommands;
 
     private String lastVarName;
@@ -22,6 +23,7 @@ public class SimpleAssemblyInterpreter {
         dbHash = new HashMap<>();
         dwHash = new HashMap<>();
         ddHash = new HashMap<>();
+        varIsStringSet = new HashSet<>();
         storeCommands = new ArrayList<>();
     }
 
@@ -60,6 +62,35 @@ public class SimpleAssemblyInterpreter {
         }
 
         return true;
+    }
+
+    private String defineValueVar(String [] strs) {
+        String res = "";
+
+        if (strs.length == 3 && strs[2].startsWith("'") && strs[2].endsWith("'")) {
+            varIsStringSet.add(strs[0]);
+            return strs[2].substring(1, strs[2].length() - 1);
+        }
+
+        if (strs.length == 3) {
+            return strs[2];
+        }
+
+        for (int i = 2; i < strs.length; i++) {
+            String s = strs[i];
+
+            if (s.startsWith("'") && s.endsWith("'")) {
+                res += s.substring(1, s.length() - 1);
+            } else if (s.startsWith("'") && s.endsWith("',")) {
+                res += s.substring(1, s.length() - 2);
+            } else if (!s.startsWith("'") && s.endsWith(",")) {
+                char ch = (char) getVarValueByDecimal(s.substring(0, s.length() - 1));
+                res += ch;
+            }
+        }
+
+        varIsStringSet.add(strs[0]);
+        return res;
     }
 
     private int getVarValueByDecimal(String value) {
@@ -153,13 +184,74 @@ public class SimpleAssemblyInterpreter {
         }
     }
 
-    private void doAdd(String [] strs) {
+    private void doAdd(String varNameA, String varNameB) {
+        String valueVarA, valueVarB;
+        int typeA;
+        int varA, varB;
+        int res;
 
+        if (dbHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            typeA = 1;
+            valueVarA = dbHash.get(varNameA.substring(0, varNameA.length() - 1));
+        } else if (dwHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            typeA = 2;
+            valueVarA = dwHash.get(varNameA.substring(0, varNameA.length() - 1));
+        } else if (ddHash.containsKey(varNameA.substring(0, varNameA.length() - 1))) {
+            typeA = 3;
+            valueVarA = ddHash.get(varNameA.substring(0, varNameA.length() - 1));
+        } else {
+            System.out.println("Error, not found variable! (" + varNameA + ")");
+            isStop = true;
+            return;
+        }
+
+        if (!varIsStringSet.contains(varNameA.substring(0, varNameA.length() - 1))) {
+            varA = getVarValueByDecimal(valueVarA);
+        } else {
+            varA = -1;
+        }
+
+        if (dbHash.containsKey(varNameB)) {
+            valueVarB = dbHash.get(varNameB);
+        } else if (dwHash.containsKey(varNameB)) {
+            valueVarB = dwHash.get(varNameB);
+        } else if (ddHash.containsKey(varNameB)) {
+            valueVarB = ddHash.get(varNameB);
+        } else {
+            System.out.println("Error, not found variable! (" + varNameB + ")");
+            isStop = true;
+            return;
+        }
+
+        if (!varIsStringSet.contains(varNameB)) {
+            varB = getVarValueByDecimal(valueVarB);
+
+            res = varA + varB;
+            if (typeA == 1) {
+                dbHash.put(varNameA, convertDecimalByOtherDataTypes(res, defineDataType(valueVarA)));
+            } else if (typeA == 2) {
+                dwHash.put(varNameA, convertDecimalByOtherDataTypes(res, defineDataType(valueVarA)));
+            } else {
+                ddHash.put(varNameA, convertDecimalByOtherDataTypes(res, defineDataType(valueVarA)));
+            }
+        } else {
+            valueVarA += valueVarB;
+
+            if (typeA == 1) {
+                dbHash.put(varNameA, valueVarA);
+            } else if (typeA == 2) {
+                dwHash.put(varNameA, valueVarA);
+            } else {
+                ddHash.put(varNameA, valueVarA);
+            }
+        }
+
+        lastVarName = varNameA;
     }
 
     private void doSubOrMulOrDiv(String varNameA, String varNameB, String type) {
         String valueVarA, valueVarB;
-        int typeA, typeB;
+        int typeA;
         int varA, varB;
         int res;
 
@@ -180,19 +272,17 @@ public class SimpleAssemblyInterpreter {
         varA = getVarValueByDecimal(valueVarA);
 
         if (dbHash.containsKey(varNameB)) {
-            typeB = 1;
             valueVarB = dbHash.get(varNameB);
         } else if (dwHash.containsKey(varNameB)) {
-            typeB = 2;
             valueVarB = dwHash.get(varNameB);
         } else if (ddHash.containsKey(varNameB)) {
-            typeB = 3;
             valueVarB = ddHash.get(varNameB);
         } else {
             System.out.println("Error, not found variable! (" + varNameB + ")");
             isStop = true;
             return;
         }
+
         varB = getVarValueByDecimal(valueVarB);
 
         switch (type) {
@@ -306,7 +396,7 @@ public class SimpleAssemblyInterpreter {
     private void doDeclareVarOrArithmeticOrDataTransfer(String [] strs) {
         switch (strs[0].toUpperCase()) {
             case "ADD":
-                doAdd(strs);
+                doAdd(strs[1], strs[2]);
                 break;
             case "SUB":
                 doSubOrMulOrDiv(strs[1].substring(0, strs[1].length() - 1), strs[2], "SUB");
@@ -324,7 +414,7 @@ public class SimpleAssemblyInterpreter {
                 doXchg(strs[1].substring(0, strs[1].length() - 1), strs[2]);
                 break;
             default:
-                addVariable(strs[0], strs[1], strs[2]);
+                addVariable(strs[0], strs[1], defineValueVar(strs));
         }
     }
 
@@ -384,7 +474,7 @@ public class SimpleAssemblyInterpreter {
         for (String s : storeCommands) {
             String [] strs = s.split(" ");
 
-            if (strs.length == 3) {
+            if (strs.length >= 3) {
                 doDeclareVarOrArithmeticOrDataTransfer(strs);
             } else if (strs.length == 2){
                 doIncOrDec(strs);
