@@ -1,6 +1,6 @@
 public class Test {
     public static void main(String[] args) {
-        String s = "VAR1 DD 48h, 45h, 4Ch, 4Ch, 4Fh, 0Ah, 0Dh, 24h";
+        String s = "VAR1 DD 'A', 'A'";
 
         System.out.println(defineValueVar(s.split(" ")));
     }
