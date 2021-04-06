@@ -237,7 +237,7 @@ public class SimpleAssemblyInterpreter {
             valueVarB = varNameB;
         }
 
-        if (!isStringB && !varIsStringSet.contains(valueVarB)) {
+        if (!isStringB && !varIsStringSet.contains(varNameB)) {
             varB = getVarValueByDecimal(valueVarB);
         } else {
             isStringB = true;
@@ -246,6 +246,7 @@ public class SimpleAssemblyInterpreter {
         if (isStringA || isStringB) {
             if (isStringA && isStringB) {
                 valueVarA += valueVarB;
+//                System.out.println(valueVarA);
             } else if (isStringA) {
                 valueVarA += varB;
             } else if (isStringB) {
@@ -257,13 +258,13 @@ public class SimpleAssemblyInterpreter {
         }
 
         if (typeA == 1) {
-            lastVarValue = convertDecimalByOtherDataTypes(res, defineDataType(dbHash.get(varNameA.substring(0, varNameA.length() - 1))));
+            lastVarValue = isStringA || isStringB ? valueVarA : convertDecimalByOtherDataTypes(res, defineDataType(dbHash.get(varNameA.substring(0, varNameA.length() - 1))));
             dbHash.put(varNameA.substring(0, varNameA.length() - 1), isStringA || isStringB ? valueVarA : lastVarValue);
 //            System.out.println("ADD: " + lastVarValue);
 //            System.out.println("GET: " + dbHash.get(varNameA.substring(0, varNameA.length() - 1)));
 //            System.out.println("NAME" + varNameA);
         } else if (typeA == 2) {
-            lastVarValue = convertDecimalByOtherDataTypes(res, defineDataType(dwHash.get(varNameA.substring(0, varNameA.length() - 1))));
+            lastVarValue = isStringA || isStringB ? valueVarA : convertDecimalByOtherDataTypes(res, defineDataType(dwHash.get(varNameA.substring(0, varNameA.length() - 1))));
             dwHash.put(varNameA.substring(0, varNameA.length() - 1), isStringA || isStringB ? valueVarA : lastVarValue);
         } else if (typeA == 3) {
             lastVarValue = convertDecimalByOtherDataTypes(res, defineDataType(ddHash.get(varNameA.substring(0, varNameA.length() - 1))));
